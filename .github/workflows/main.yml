@@ -18,5 +18,6 @@ jobs:
       - name: Run Checkin Script
         env:
           WORKBUDDY_TOKEN: ${{ secrets.WORKBUDDY_TOKEN }}
-          # 注意：如果这个项目还需要其他的环境变量，可以在这里继续补充
+          # 加上下面这一行，把你的账号和仓库名写进去
+          WB_REPO: "piaolilin/workbuddy-cloud-checkin" 
         run: bash scripts/cloud-run-checkin.sh
