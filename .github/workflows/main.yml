@@ -2,23 +2,24 @@ name: WorkBuddy Daily Checkin
 
 on:
   schedule:
-    - cron: '0 1 * * *' # 每天北京时间早上 9:00 自动运行
-  workflow_dispatch: # 允许手动点击运行
+    - cron: '0 1 * * *' # 每天北京时间早上 9:00
+  workflow_dispatch:
 
 jobs:
   checkin:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Grant execute permission for scripts
-        run: chmod +x scripts/*.sh
-
-      - name: Run Checkin Script
+      - name: Direct HTTP Checkin
         env:
-          WORKBUDDY_TOKEN: ${{ secrets.WORKBUDDY_TOKEN }}
-          WB_REPO: "piaolilin/workbuddy-cloud-checkin"
-          # 添加下面这一行，开启详细日志
-          ACTIONS_STEP_DEBUG: true 
-        run: bash scripts/cloud-run-checkin.sh
+          WORKBUDDY_COOKIE: ${{ secrets.WORKBUDDY_COOKIE }}
+        run: |
+          echo "=== 1. 测试网络连通性 ==="
+          curl -m 15 -s -o /dev/null -w "HTTP Status: %{http_code}\n" https://www.workbuddy.cn
+          
+          echo "=== 2. 尝试执行签到 ==="
+          # 这里直接带上你的 Cookie，不再用 Bearer Token
+          curl -m 15 -s -w "\n[签到请求 HTTP 状态码: %{http_code}]\n" \
+            -X POST "https://www.workbuddy.cn/api/v2/billing/meter/daily-checkin" \
+            -H "Cookie: $WORKBUDDY_COOKIE" \
+            -H "Content-Type: application/json" \
+            -d '{}'
