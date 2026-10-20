@@ -12,16 +12,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
-        run: npm install
+      - name: Grant execute permission for scripts
+        run: chmod +x scripts/*.sh
 
       - name: Run Checkin Script
         env:
           WORKBUDDY_TOKEN: ${{ secrets.WORKBUDDY_TOKEN }}
-        # 假设入口文件是 index.js，如果是别的请留意
-        run: node index.js
+          # 注意：如果这个项目还需要其他的环境变量，可以在这里继续补充
+        run: bash scripts/cloud-run-checkin.sh
