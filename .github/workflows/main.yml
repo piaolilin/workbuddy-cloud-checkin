@@ -2,58 +2,27 @@ name: WorkBuddy Daily Checkin
 
 on:
   schedule:
-    - cron: '0 22 * * *' # 每天早上 6:00 (UTC 22:00)
+    - cron: '0 22 * * *' # 每天 UTC 22:00（北京时间早上 6:00）
   workflow_dispatch:
 
 jobs:
   checkin:
     runs-on: ubuntu-latest
     steps:
-      - name: Brute Force Checkin
+      - name: Checkin via CodeBuddy API
         env:
           WORKBUDDY_COOKIE: ${{ secrets.WORKBUDDY_COOKIE }}
         run: |
-          echo "=== 开始地毯式搜索签到接口 ==="
-          
-          # 定义一个数组，包含所有可能的接口路径
-          PATHS=(
-            "https://www.workbuddy.cn/api/v2/billing/meter/checkin"
-            "https://www.workbuddy.cn/api/v3/billing/meter/daily-checkin"
-            "https://www.workbuddy.cn/api/v2/billing/meter/checkin-status"
-            "https://www.workbuddy.cn/api/v2/user/checkin"
-            "https://www.workbuddy.cn/api/v2/billing/checkin"
-            "https://www.workbuddy.cn/api/v2/user/daily-checkin"
-          )
+          echo "=== 1. 查询今日签到状态 ==="
+          curl -m 15 -s -w "\n[状态查询 HTTP 状态码: %{http_code}]\n" \
+            -X POST "https://www.codebuddy.cn/v2/billing/meter/checkin-activity-status" \
+            -H "Cookie: $WORKBUDDY_COOKIE" \
+            -H "Content-Type: application/json" \
+            -d '{}'
 
-          # 遍历每一个路径
-          for URL in "${PATHS[@]}"; do
-            echo "----------------------------------------"
-            echo "正在尝试 POST: $URL"
-            
-            # 发送 POST 请求（因为签到通常是 POST）
-            RESPONSE=$(curl -m 10 -s -w "\nHTTP_STATUS:%{http_code}" \
-              -X POST "$URL" \
-              -H "Cookie: $WORKBUDDY_COOKIE" \
-              -H "Content-Type: application/json" \
-              -d '{}')
-              
-            # 提取状态码和正文
-            STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:.*" | cut -d':' -f2)
-            BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
-
-            echo "返回状态码: $STATUS"
-            echo "返回内容: $BODY"
-
-            # 如果状态码是 200，且不是 404，说明可能找对接口了
-            if [ "$STATUS" = "200" ]; then
-              echo "✅ 找到有效接口！请求成功！"
-              # 如果返回内容里包含 "code":0 或者 "success":true
-              if echo "$BODY" | grep -q '"code":0' || echo "$BODY" | grep -q '"success":true'; then
-                echo "🎉 签到成功！"
-                exit 0
-              fi
-            fi
-          done
-          
-          echo "----------------------------------------"
-          echo "穷举结束。如果以上全是 404，说明官方接口路径彻底变了。"
+          echo "=== 2. 执行签到 ==="
+          curl -m 15 -s -w "\n[签到请求 HTTP 状态码: %{http_code}]\n" \
+            -X POST "https://www.codebuddy.cn/v2/billing/meter/daily-checkin" \
+            -H "Cookie: $WORKBUDDY_COOKIE" \
+            -H "Content-Type: application/json" \
+            -d '{}'
